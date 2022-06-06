@@ -1,6 +1,6 @@
-import asyncio
+import asyncio, aioschedule
+import aioschedule as schedule
 import logging
-import time
 
 from app.config_reader import load_config
 from app.handlers.common import register_handlers_common
@@ -49,17 +49,20 @@ buy_value = swapy_curs()[1]
 async def update_value():
     global sell_value, buy_value
     try:
-        sell_value = await swapy_curs()[0]
-        buy_value = await swapy_curs()[1]
-
+        sell_value = swapy_curs()[0]
+        buy_value = swapy_curs()[1]
+        print(sell_value, buy_value)
     except Exception as error:
         print(error)
 
-async def timer_update():
+async def scheduler():
+    schedule.every(10).minutes.do(update_value)
     while True:
-        await update_value()
-        print(sell_value, buy_value)
-        await asyncio.sleep(60)
+        await aioschedule.run_pending()
+        await asyncio.sleep(1)
+
+async def on_startup(_):
+    asyncio.create_task(scheduler())
 
 @dp.message_handler(commands='start')
 async def crypto_start(message: types.Message):
@@ -129,5 +132,4 @@ async def crypto_result(message: types.Message, state: FSMContext):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp)
-    timer_update()
+     executor.start_polling(dp, skip_updates=False, on_startup=on_startup)
