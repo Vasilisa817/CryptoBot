@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 # Настройка логирования в stdout
 logging.basicConfig(
     level=logging.INFO,
+    filename='main.log',
+    filemode='a',
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
 )
 logger.error("Starting bot")
@@ -53,7 +55,7 @@ async def update_value():
         buy_value = swapy_curs()[1]
         print(sell_value, buy_value)
     except Exception as error:
-        print(error)
+        logging.error(error, exc_info=True)
 
 async def scheduler():
     schedule.every(10).minutes.do(update_value)
@@ -111,9 +113,7 @@ async def crypto_result(message: types.Message, state: FSMContext):
     data = await state.get_data()
     crypto_name = data.get('crypto_name')
     await state.finish()
-    keyboard = types.InlineKeyboardMarkup(row_width=2)
-    keyboard.add([types.InlineKeyboardButton(text="Связаться с менеджером",
-                                   url="https://t.me/nemolyaev")])
+    
     if not message.text.isdigit():
         answer_str = 'Рассчет невозможен'
     elif 'sell' in crypto_name:
@@ -128,6 +128,10 @@ async def crypto_result(message: types.Message, state: FSMContext):
         answer_str = f'{message.text} / {buy_value[crypto_name[4:].upper()]} = {rub_summ} {crypto_name[4:].upper()}'
     else:
         answer_str = 'Рассчет невозможен'
+    keyboard = types.InlineKeyboardMarkup(row_width=2)
+    button1 = types.InlineKeyboardButton(text="Связаться с менеджером",
+                                   url="https://t.me/nemolyaev")
+    keyboard.add(button1)
     await message.answer(f'Расчет: {answer_str}', reply_markup=keyboard)
 
 
